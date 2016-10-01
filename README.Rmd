@@ -29,6 +29,56 @@ devtools::install_git("https://gitlab.com/hrbrmstr/bom.git")
 options(width=120)
 ```
 
+There are some basic examples in the [Usage](#Usage) section, but this may be a better illustration. Say you have a CSV file:
+
+```{r}
+fil <- system.file("examples", "stop_times.txt", package="bom")
+```
+
+And, say you want to read it in with a more modern CSV reader:
+
+```{r}
+library(readr)
+
+df <- read_csv(fil)
+```
+
+Let's look at that file:
+
+
+```{r}
+print(df, n=1)
+```
+
+Hrm…why are those backticks around `trip_id`? Isn't it just a regular string?
+
+```{r}
+print(colnames(df)[1])
+```
+
+It sure _looks_ that way, but looks can be deceiving:
+
+```{r}
+print(charToRaw(colnames(df)[1]))
+```
+
+Those strange characters at the beginning are a byte order mark (BOM). We can test for it being there and work around it:
+
+```{r}
+library(bom)
+
+if (file_has_bom(fil)) {
+  n <- switch(file_bom_type(fil), `UTF-8`=3, 2)
+  df <- read_csv(readBin(fil, "raw", file.size(fil))[-(1:n)])
+}
+
+print(df, n=1)
+
+charToRaw(colnames(df)[1])
+```
+
+Note that the built-in `read.csv()` can be used with `encoding="UTF-8-BOM"` and you can even use that encoding on non-binary connections, but you end up having to type convert and tibble convert that object so you're basically rewriting (badly) `readr::read_csv()`.
+
 ### Usage
 
 ```{r message=FALSE, warning=FALSE, error=FALSE}

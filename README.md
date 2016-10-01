@@ -26,6 +26,99 @@ devtools::install_git("https://gitlab.com/hrbrmstr/bom.git")
 options(width=120)
 ```
 
+There are some basic examples in the [Usage](#Usage) section, but this may be a better illustration. Say you have a CSV file:
+
+``` r
+fil <- system.file("examples", "stop_times.txt", package="bom")
+```
+
+And, say you want to read it in with a more modern CSV reader:
+
+``` r
+library(readr)
+
+df <- read_csv(fil)
+```
+
+    ## Parsed with column specification:
+    ## cols(
+    ##   `﻿trip_id` = col_integer(),
+    ##   arrival_time = col_time(format = ""),
+    ##   departure_time = col_time(format = ""),
+    ##   stop_id = col_integer(),
+    ##   stop_sequence = col_integer(),
+    ##   pickup_type = col_integer(),
+    ##   drop_off_type = col_integer()
+    ## )
+
+Let's look at that file:
+
+``` r
+print(df, n=1)
+```
+
+    ## # A tibble: 64,827 × 7
+    ##   `﻿trip_id` arrival_time departure_time stop_id stop_sequence pickup_type drop_off_type
+    ##       <int>       <time>         <time>   <int>         <int>       <int>         <int>
+    ## 1     50000   29700 secs     29700 secs  120001            41           1             0
+    ## # ... with 6.483e+04 more rows
+
+Hrm…why are those backticks around `trip_id`? Isn't it just a regular string?
+
+``` r
+print(colnames(df)[1])
+```
+
+    ## [1] "﻿trip_id"
+
+It sure *looks* that way, but looks can be deceiving:
+
+``` r
+print(charToRaw(colnames(df)[1]))
+```
+
+    ##  [1] ef bb bf 74 72 69 70 5f 69 64
+
+Those strange characters at the beginning are a byte order mark (BOM). We can test for it being there and work around it:
+
+``` r
+library(bom)
+
+if (file_has_bom(fil)) {
+  n <- switch(file_bom_type(fil), `UTF-8`=3, 2)
+  df <- read_csv(readBin(fil, "raw", file.size(fil))[-(1:n)])
+}
+```
+
+    ## Parsed with column specification:
+    ## cols(
+    ##   trip_id = col_integer(),
+    ##   arrival_time = col_time(format = ""),
+    ##   departure_time = col_time(format = ""),
+    ##   stop_id = col_integer(),
+    ##   stop_sequence = col_integer(),
+    ##   pickup_type = col_integer(),
+    ##   drop_off_type = col_integer()
+    ## )
+
+``` r
+print(df, n=1)
+```
+
+    ## # A tibble: 64,827 × 7
+    ##   trip_id arrival_time departure_time stop_id stop_sequence pickup_type drop_off_type
+    ##     <int>       <time>         <time>   <int>         <int>       <int>         <int>
+    ## 1   50000   29700 secs     29700 secs  120001            41           1             0
+    ## # ... with 6.483e+04 more rows
+
+``` r
+charToRaw(colnames(df)[1])
+```
+
+    ## [1] 74 72 69 70 5f 69 64
+
+Note that the built-in `read.csv()` can be used with `encoding="UTF-8-BOM"` and you can even use that encoding on non-binary connections, but you end up having to type convert and tibble convert that object so you're basically rewriting (badly) `readr::read_csv()`.
+
 ### Usage
 
 ``` r
@@ -82,7 +175,7 @@ library(testthat)
 date()
 ```
 
-    ## [1] "Sat Oct  1 08:52:10 2016"
+    ## [1] "Sat Oct  1 09:26:55 2016"
 
 ``` r
 test_dir("tests/")
