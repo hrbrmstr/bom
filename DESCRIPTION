@@ -1,0 +1,24 @@
+Package: bom
+Type: Package
+Title: Tools to Identify and Work with Byte Order Marks
+Version: 0.1.0
+Date: 2016-10-01
+Author: Bob Rudis (bob@@rud.is)
+Maintainer: Bob Rudis <bob@rud.is>
+Description: Byte order marks (BOM) appear at the beginning of a file or buffer and 
+    provide information about the encoding of the contents. R provides facilities to 
+    work with files and connections with BOMs but there are situatons where these 
+    facilities are not sufficient. Tools are provided to identify the presence and
+    type of byte order marks in files and R objects as well as remove them.
+URL: http://gitlab.com/hrbrmstr/bom
+BugReports: https://gitlab.com/hrbrmstr/bom/issues
+License: AGPL
+Suggests:
+    testthat
+Depends:
+    R (>= 3.2.0)
+Imports:
+    purrr,
+    Rcpp
+LinkingTo: Rcpp
+RoxygenNote: 5.0.1
